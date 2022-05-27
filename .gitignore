@@ -1,6 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-extensions/__pycache__
+*.pyc
 *.py[cod]
 *$py.class
 
@@ -152,6 +152,3 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-
-# ignore secrets folder
-secrets/
