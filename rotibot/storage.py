@@ -1,4 +1,3 @@
-from asyncore import write
 import csv
 import typing as t
 
