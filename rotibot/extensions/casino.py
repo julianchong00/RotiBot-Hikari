@@ -1,4 +1,4 @@
-import json
+import rotibot.storage as store
 import typing as t
 
 import hikari
@@ -20,8 +20,9 @@ async def balance(ctx: lightbulb.Context) -> None:
         await ctx.respond("That user is not in the server")
         return
 
-    users = await load_users()
-    target_id = target.id
+    # Read in user data from CSV file
+    users = store.read_csv()
+    target_id = str(target.id)
 
     # Check if target ID is in database, if not, make a new user and print default balance value
     if target_id not in users.keys():
@@ -44,28 +45,8 @@ async def make_account(user: hikari.Member, users: t.Any):
     # Create new dictionary entry for the new user
     users[user.id] = {"username": user.display_name, "balance": 10000}
 
-    await save_users(users)
-
-
-"""
-Function to load user balances from json file
-"""
-
-
-async def load_users() -> t.Any:
-    with open("users.json", "r") as f:
-        users = json.load(f)
-    return users
-
-
-"""
-Function to save user balances into json file
-"""
-
-
-async def save_users(users: t.Any) -> None:
-    with open("users.json", "w") as f:
-        json.dump(users, f, indent=2)
+    # Write updated dictionary to CSV file
+    store.write_csv(users)
 
 
 """
