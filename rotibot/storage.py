@@ -7,11 +7,11 @@ def read_csv() -> t.Dict[int, t.Dict]:
     with open("users.csv", "r") as file:
         csv_dict = csv.DictReader(file)
 
-        user_dict = dict()
         for row in csv_dict:
+            user_dict = dict()
             user_dict["username"] = row["username"]
             user_dict["balance"] = int(row["balance"])
-            users[row["discordID"]] = user_dict
+            users[int(row["discordID"])] = user_dict
 
     return users
 
