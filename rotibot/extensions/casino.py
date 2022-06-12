@@ -7,12 +7,21 @@ import lightbulb
 
 casino_plugin = lightbulb.Plugin("Casino", "Casino plugin for RotiBot")
 
+"""
+Defining casino command group
+"""
+
 
 @casino_plugin.command
 @lightbulb.command("casino", "Casino commands for gambling addicts")
 @lightbulb.implements(lightbulb.SlashCommandGroup, lightbulb.PrefixCommandGroup)
 async def casino_group(ctx: lightbulb.Context) -> None:
     pass
+
+
+"""
+Balance command: !balance @user
+"""
 
 
 @casino_group.child
@@ -23,25 +32,25 @@ async def casino_group(ctx: lightbulb.Context) -> None:
 @lightbulb.implements(lightbulb.PrefixSubCommand, lightbulb.SlashSubCommand)
 async def balance(ctx: lightbulb.Context) -> None:
     target = ctx.get_guild().get_member(ctx.options.target or ctx.user)
+    target_id = int(target.id)
 
     if not target:
         await ctx.respond("That user is not in the server")
         return
 
-    # Read in user data from CSV file
-    users = store.read_csv()
-    target_id = int(target.id)
-
     # Check if target ID is in database, if not, make a new user and print default balance value
-    if target_id not in users.keys():
-        await make_account(target, users)
-        await ctx.respond(f"{target.mention}, you currently have 10,000 points.")
-    else:
-        # Retrieve balance from users dict
-        target_balance = users[target_id]["balance"]
-        await ctx.respond(
-            f"{target.mention}, you currently have {formatBalance(target_balance)} points."
-        )
+    users = await create_new_user_account(target)
+
+    # Retrieve balance from users dict
+    target_balance = users[target_id]["balance"]
+    await ctx.respond(
+        f"{target.mention}, you currently have {formatBalance(target_balance)} points."
+    )
+
+
+"""
+Roll command: !roll @bet
+"""
 
 
 @casino_group.child
@@ -54,19 +63,15 @@ async def balance(ctx: lightbulb.Context) -> None:
 @lightbulb.implements(lightbulb.PrefixSubCommand, lightbulb.SlashSubCommand)
 async def roll(ctx: lightbulb.Context) -> None:
     bet = ctx.options.bet
+    bet_num = 0
 
     user = ctx.get_guild().get_member(ctx.user)
     user_id = int(user.id)
 
-    users = store.read_csv()
-
-    if user_id not in users.keys():
-        await make_account(user, users)
-        users = store.read_csv()
-
     user_bal = users[user_id]["balance"]
 
-    bet_num = 0
+    users = await create_new_user_account(user)
+
     if bet == "all":
         if user_bal > 1000000:
             bet_num = 1000000
@@ -109,6 +114,11 @@ async def roll(ctx: lightbulb.Context) -> None:
     store.write_csv(users)
 
 
+"""
+Error handling function for roll command
+"""
+
+
 @roll.set_error_handler
 async def roll_error(event: lightbulb.CommandErrorEvent) -> bool:
     exception = event.exception.__cause__ or event.exception
@@ -116,8 +126,93 @@ async def roll_error(event: lightbulb.CommandErrorEvent) -> bool:
         await event.context.respond(
             f"{event.context.author.mention}, roll command is on cooldown for {exception.retry_after:,.0f} seconds."
         )
+    elif isinstance(exception, lightbulb.errors.CommandInvocationError):
+        await event.context.respond(
+            f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
+        )
     else:
         raise exception
+
+
+"""
+Give command: !give @user @gift_amount
+"""
+
+
+@casino_group.child
+@lightbulb.option(
+    "user", "The user to give a specified amount of points", hikari.User, required=True
+)
+@lightbulb.option(
+    "gift_amount",
+    "Amount to be gifted to specified user",
+    int,
+    required=True,
+    min_value=1,
+)
+@lightbulb.command("give", "Gives a user a specified amount of points")
+@lightbulb.implements(lightbulb.PrefixSubCommand, lightbulb.SlashSubCommand)
+async def give(ctx: lightbulb.Context) -> None:
+    gift_amount = ctx.options.gift_amount
+
+    target = ctx.options.user
+    target_id = int(target.id)
+
+    user = ctx.get_guild().get_member(ctx.user)
+    user_id = int(user.id)
+
+    if not target:
+        await ctx.respond("That user is not in the server.")
+        return
+    if gift_amount <= 0:
+        await ctx.respond(f"{user.mention}, gift amount has to be greater than 0.")
+        return
+    if target_id == user_id:
+        await ctx.respond(f"{user.mention}, you cannot give points to yourself.")
+        return
+
+    users = await create_new_user_account(user)
+    users = await create_new_user_account(target)
+
+    gifter_balance = users[user_id]["balance"]
+    if gift_amount > gifter_balance:
+        await ctx.respond(f"{user.mention}, you do not have enough points to gift.")
+    else:
+        users[user_id]["balance"] -= gift_amount
+        users[target_id]["balance"] += gift_amount
+        await ctx.respond(
+            f"{target.mention}, {user.mention} has given you {formatBalance(gift_amount)} points."
+        )
+        store.write_csv(users)
+
+
+"""
+Error handling function for give command
+"""
+
+
+@give.set_error_handler
+async def give_error(event: lightbulb.CommandErrorEvent) -> bool:
+    exception = event.exception.__cause__ or event.exception
+    if isinstance(exception, lightbulb.errors.CommandInvocationError):
+        await event.context.respond(
+            f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
+        )
+    else:
+        raise exception
+
+
+"""
+Function to check whether a user is in CSV file and create new account if not
+"""
+
+
+async def create_new_user_account(user: hikari.Member) -> t.Dict[int, t.Dict]:
+    users = store.read_csv()
+    if int(user.id) not in users.keys():
+        await make_account(user, users)
+        users = store.read_csv()
+    return users
 
 
 """
@@ -125,7 +220,7 @@ Function to create a new entry for a new user
 """
 
 
-async def make_account(user: hikari.Member, users: t.Any):
+async def make_account(user: hikari.Member, users: t.Dict[int, t.Dict]) -> None:
     # Create new dictionary entry for the new user
     users[int(user.id)] = {"username": user.display_name, "balance": 10000}
 
