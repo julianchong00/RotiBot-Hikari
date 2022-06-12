@@ -68,9 +68,9 @@ async def roll(ctx: lightbulb.Context) -> None:
     user = ctx.get_guild().get_member(ctx.user)
     user_id = int(user.id)
 
-    user_bal = users[user_id]["balance"]
-
     users = await create_new_user_account(user)
+
+    user_bal = users[user_id]["balance"]
 
     if bet == "all":
         if user_bal > 1000000:
