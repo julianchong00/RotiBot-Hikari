@@ -203,6 +203,72 @@ async def give_error(event: lightbulb.CommandErrorEvent) -> bool:
 
 
 """
+Top command: !top
+"""
+
+
+@casino_group.child
+@lightbulb.option(
+    "number_of_users",
+    "Number of users to be displayed on leaderboard",
+    int,
+    required=False,
+    min_value=1,
+    default=5,
+)
+@lightbulb.command("top", "Shows leaderboard of top users with the most points.")
+@lightbulb.implements(lightbulb.PrefixSubCommand, lightbulb.SlashSubCommand)
+async def top(ctx: lightbulb.Context) -> None:
+    num_users = ctx.options.number_of_users
+
+    users = store.read_csv()
+    user = ctx.get_guild().get_member(ctx.author)
+
+    users = await create_new_user_account(user)
+
+    # Sort users dictionary in reverse order by point balance
+    sorted_users = sorted(
+        users.items(), key=lambda item: item[1]["balance"], reverse=True
+    )
+
+    # Get top 5 users from sorted list
+    top_users = []
+
+    if len(users) > num_users:
+        for i in range(num_users):
+            user_points = (
+                sorted_users[i][1]["username"],
+                formatBalance(sorted_users[i][1]["balance"]),
+            )
+            top_users.append(user_points)
+    else:
+        for i in range(len(users)):
+            user_points = (
+                sorted_users[i][1]["username"],
+                formatBalance(sorted_users[i][1]["balance"]),
+            )
+            top_users.append(user_points)
+
+    # Prepare embed to send as message
+    # Change embed description if less than 5 users in json file
+    embed_desc = f"Top {len(top_users)} Users"
+    embed = hikari.Embed(
+        title="Points Leaderboard", description=embed_desc, color=0xD81313
+    )
+    for index in range(len(top_users)):
+        embed.add_field(
+            name=str(index + 1) + ". " + top_users[index][0],
+            value=top_users[index][1],
+            inline=True,
+        )
+    await ctx.respond(embed=embed)
+
+
+"""
+Donate command: !donate @user @amount
+"""
+
+"""
 Function to check whether a user is in CSV file and create new account if not
 """
 
