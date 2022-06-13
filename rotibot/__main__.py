@@ -18,7 +18,7 @@ bot = lightbulb.BotApp(
     token=os.getenv("TOKEN"),
     prefix="!",
     intents=hikari.Intents.ALL,
-    default_enabled_guilds=int(os.getenv("GUILD_ID")),
+    # default_enabled_guilds=int(os.getenv("GUILD_ID")),
     help_slash_command=True,
 )
 
