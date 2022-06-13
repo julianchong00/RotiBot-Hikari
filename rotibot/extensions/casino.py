@@ -144,7 +144,7 @@ Give command: !give @user @gift_amount
     "user", "The user to give a specified amount of points", hikari.User, required=True
 )
 @lightbulb.option(
-    "gift_amount",
+    "amount",
     "Amount to be gifted to specified user",
     int,
     required=True,
@@ -153,7 +153,7 @@ Give command: !give @user @gift_amount
 @lightbulb.command("give", "Gives a user a specified amount of points")
 @lightbulb.implements(lightbulb.PrefixSubCommand, lightbulb.SlashSubCommand)
 async def give(ctx: lightbulb.Context) -> None:
-    gift_amount = ctx.options.gift_amount
+    gift_amount = ctx.options.amount
 
     target = ctx.options.user
     target_id = int(target.id)
@@ -221,7 +221,6 @@ Top command: !top
 async def top(ctx: lightbulb.Context) -> None:
     num_users = ctx.options.number_of_users
 
-    users = store.read_csv()
     user = ctx.get_guild().get_member(ctx.author)
 
     users = await create_new_user_account(user)
@@ -231,7 +230,7 @@ async def top(ctx: lightbulb.Context) -> None:
         users.items(), key=lambda item: item[1]["balance"], reverse=True
     )
 
-    # Get top 5 users from sorted list
+    # Get top num_users users from sorted list
     top_users = []
 
     if len(users) > num_users:
@@ -250,10 +249,9 @@ async def top(ctx: lightbulb.Context) -> None:
             top_users.append(user_points)
 
     # Prepare embed to send as message
-    # Change embed description if less than 5 users in json file
     embed_desc = f"Top {len(top_users)} Users"
     embed = hikari.Embed(
-        title="Points Leaderboard", description=embed_desc, color=0xD81313
+        title="Points Leaderboard", description=embed_desc, color=user.accent_colour
     )
     for index in range(len(top_users)):
         embed.add_field(
@@ -265,8 +263,54 @@ async def top(ctx: lightbulb.Context) -> None:
 
 
 """
-Donate command: !donate @user @amount
+ADMIN Donate command: !donate @user @amount
 """
+
+
+@casino_group.child
+@lightbulb.add_checks(
+    lightbulb.checks.has_role_permissions(hikari.Permissions.ADMINISTRATOR)
+)
+@lightbulb.option("user", "User to donate points to", hikari.Member, required=True)
+@lightbulb.option(
+    "amount", "Amount of points to be donated", int, required=True, min_value=1
+)
+@lightbulb.command("donate", "Admin command for donating points to a user")
+@lightbulb.implements(lightbulb.PrefixSubCommand, lightbulb.SlashSubCommand)
+async def donate(ctx: lightbulb.Context) -> None:
+    donation_amount = ctx.options.amount
+
+    target = ctx.options.user
+    target_id = int(target.id)
+
+    if not target:
+        await ctx.respond("That user is not in the server.")
+        return
+
+    # Makes an account for the mentioned user if user doesn't have an account
+    users = await create_new_user_account(target)
+
+    users[target_id]["balance"] += donation_amount
+    await ctx.respond(
+        f"{target.mention}, {formatBalance(donation_amount)} point(s) has been added to your balance."
+    )
+    store.write_csv(users)
+
+
+@donate.set_error_handler
+async def donate_error(event: lightbulb.CommandErrorEvent) -> bool:
+    exception = event.exception.__cause__ or event.exception
+    if isinstance(exception, lightbulb.errors.CheckFailure):
+        await event.context.respond(
+            f"{event.context.author.mention}, you do not have the required permissions to run {event.context.command.name} command."
+        )
+    elif isinstance(exception, lightbulb.errors.CommandInvocationError):
+        await event.context.respond(
+            f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
+        )
+    else:
+        raise exception
+
 
 """
 Function to check whether a user is in CSV file and create new account if not
