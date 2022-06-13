@@ -125,11 +125,11 @@ Error handling function for roll command
 @roll.set_error_handler
 async def roll_error(event: lightbulb.CommandErrorEvent) -> bool:
     exception = event.exception.__cause__ or event.exception
-    if isinstance(exception, lightbulb.errors.CommandIsOnCooldown):
+    if isinstance(exception, lightbulb.CommandIsOnCooldown):
         await event.context.respond(
             f"{event.context.author.mention}, roll command is on cooldown for {exception.retry_after:,.0f} seconds."
         )
-    elif isinstance(exception, lightbulb.errors.CommandInvocationError):
+    elif isinstance(exception, lightbulb.CommandInvocationError):
         await event.context.respond(
             f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
         )
@@ -197,7 +197,7 @@ Error handling function for give command
 @give.set_error_handler
 async def give_error(event: lightbulb.CommandErrorEvent) -> bool:
     exception = event.exception.__cause__ or event.exception
-    if isinstance(exception, lightbulb.errors.CommandInvocationError):
+    if isinstance(exception, lightbulb.CommandInvocationError):
         await event.context.respond(
             f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
         )
@@ -303,11 +303,11 @@ async def donate(ctx: lightbulb.Context) -> None:
 @donate.set_error_handler
 async def donate_error(event: lightbulb.CommandErrorEvent) -> bool:
     exception = event.exception.__cause__ or event.exception
-    if isinstance(exception, lightbulb.errors.CheckFailure):
+    if isinstance(exception, lightbulb.MissingRequiredPermission):
         await event.context.respond(
             f"{event.context.author.mention}, you do not have the required permissions to run {event.context.command.name} command."
         )
-    elif isinstance(exception, lightbulb.errors.CommandInvocationError):
+    elif isinstance(exception, lightbulb.CommandInvocationError):
         await event.context.respond(
             f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
         )
