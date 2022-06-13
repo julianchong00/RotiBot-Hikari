@@ -21,7 +21,6 @@ bot = lightbulb.BotApp(
     default_enabled_guilds=int(os.getenv("GUILD_ID")),
     help_slash_command=True,
 )
-tasks.load(bot)
 
 
 @bot.listen()
@@ -37,6 +36,7 @@ async def on_stopping(event: hikari.StoppingEvent) -> None:
     await bot.d.aio_session.close()
 
 
+tasks.load(bot)
 bot.load_extensions_from("./rotibot/extensions", must_exist=True)
 
 

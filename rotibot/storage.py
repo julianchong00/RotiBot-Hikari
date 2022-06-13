@@ -4,7 +4,7 @@ import typing as t
 # Reads users.csv and returns a Dictionary
 def read_csv() -> t.Dict[int, t.Dict]:
     users = dict()
-    with open("users.csv", "r+") as file:
+    with open("users.csv", "r") as file:
         csv_dict = csv.DictReader(file)
 
         for row in csv_dict:
