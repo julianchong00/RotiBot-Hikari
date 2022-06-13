@@ -1,9 +1,12 @@
 import random
-import rotibot.storage as store
 import typing as t
 
 import hikari
 import lightbulb
+from lightbulb.ext import tasks
+
+import rotibot.storage as store
+import rotibot.database
 
 casino_plugin = lightbulb.Plugin("Casino", "Casino plugin for RotiBot")
 
@@ -336,6 +339,31 @@ async def make_account(user: hikari.Member, users: t.Dict[int, t.Dict]) -> None:
 
     # Write updated dictionary to CSV file
     store.write_csv(users)
+
+
+"""
+Passive income for people with accounts in server. 250 points every 5 minutes.
+"""
+
+
+@tasks.task(m=5, auto_start=True)
+async def passive_income():
+    users = store.read_csv()
+
+    for user in users.values():
+        user["balance"] += 250
+
+    store.write_csv(users)
+
+
+"""
+Save CSV data to PostgreSQL database every 10 minutes.
+"""
+
+
+@tasks.task(m=10, auto_start=True)
+async def backup_data():
+    return
 
 
 """

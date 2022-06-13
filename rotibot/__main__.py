@@ -2,6 +2,7 @@ import os
 
 import hikari
 import lightbulb
+from lightbulb.ext import tasks
 import aiohttp
 
 from dotenv import load_dotenv
@@ -18,6 +19,7 @@ bot = lightbulb.BotApp(
     default_enabled_guilds=int(os.getenv("GUILD_ID")),
     help_slash_command=True,
 )
+tasks.load(bot)
 
 
 @bot.listen()
