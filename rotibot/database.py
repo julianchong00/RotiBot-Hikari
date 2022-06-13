@@ -7,7 +7,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import storage as store
+import rotibot.storage as store
 
 load_dotenv()
 env_path = Path("..") / ".env"
@@ -42,7 +42,24 @@ Function to save all user data from CSV file into PostgreSQL database
 def saveAllUsers(users: t.Dict[int, t.Dict]) -> None:
     Session = sessionmaker(engine)
     session = Session()
-    return
+
+    try:
+        session.query(User).delete()
+        session.commit()
+    except:
+        session.rollback()
+        raise Exception
+
+    for user in users:
+        user_row = User(
+            discordID=user,
+            username=users[user]["username"],
+            balance=users[user]["balance"],
+        )
+        session.add(user_row)
+    session.commit()
+
+    session.close()
 
 
 """
@@ -64,3 +81,4 @@ def loadAllUsers() -> None:
         outerDict[int(user.discordID)] = innerDict
 
     store.write_csv(outerDict)
+    session.close()

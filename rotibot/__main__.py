@@ -5,6 +5,8 @@ import lightbulb
 from lightbulb.ext import tasks
 import aiohttp
 
+import rotibot.database as db
+
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -25,6 +27,7 @@ tasks.load(bot)
 @bot.listen()
 async def on_starting(event: hikari.StartingEvent) -> None:
     channel = await bot.rest.fetch_channel(os.getenv("STDOUT_CHANNEL_ID"))
+    db.loadAllUsers()
     await channel.send("Rotibot has been started!")
     bot.d.aio_session = aiohttp.ClientSession()
 

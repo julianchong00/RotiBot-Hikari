@@ -6,7 +6,7 @@ import lightbulb
 from lightbulb.ext import tasks
 
 import rotibot.storage as store
-import rotibot.database
+import rotibot.database as db
 
 casino_plugin = lightbulb.Plugin("Casino", "Casino plugin for RotiBot")
 
@@ -295,7 +295,7 @@ async def donate(ctx: lightbulb.Context) -> None:
 
     users[target_id]["balance"] += donation_amount
     await ctx.respond(
-        f"{target.mention}, {formatBalance(donation_amount)} point(s) has been added to your balance."
+        f"{target.mention}, {formatBalance(donation_amount)} point(s) have been added to your balance."
     )
     store.write_csv(users)
 
@@ -347,7 +347,7 @@ Passive income for people with accounts in server. 250 points every 5 minutes.
 
 
 @tasks.task(m=5, auto_start=True)
-async def passive_income():
+async def passive_income() -> None:
     users = store.read_csv()
 
     for user in users.values():
@@ -362,8 +362,11 @@ Save CSV data to PostgreSQL database every 10 minutes.
 
 
 @tasks.task(m=10, auto_start=True)
-async def backup_data():
-    return
+async def backup_data() -> None:
+    users = store.read_csv()
+
+    if len(users) > 0:
+        db.saveAllUsers(users)
 
 
 """
