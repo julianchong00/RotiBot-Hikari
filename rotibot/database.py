@@ -1,10 +1,10 @@
 import os
 import typing as t
-from dotenv import load_dotenv
 from pathlib import Path
+
+from dotenv import load_dotenv
+from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import rotibot.storage as store

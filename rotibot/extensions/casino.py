@@ -3,10 +3,9 @@ import typing as t
 
 import hikari
 import lightbulb
-from lightbulb.ext import tasks
-
-import rotibot.storage as store
 import rotibot.database as db
+import rotibot.storage as store
+from lightbulb.ext import tasks
 
 casino_plugin = lightbulb.Plugin("Casino", "Casino plugin for RotiBot")
 
@@ -118,26 +117,6 @@ async def roll(ctx: lightbulb.Context) -> None:
 
 
 """
-Error handling function for roll command
-"""
-
-
-@roll.set_error_handler
-async def roll_error(event: lightbulb.CommandErrorEvent) -> bool:
-    exception = event.exception.__cause__ or event.exception
-    if isinstance(exception, lightbulb.CommandIsOnCooldown):
-        await event.context.respond(
-            f"{event.context.author.mention}, roll command is on cooldown for {exception.retry_after:,.0f} seconds."
-        )
-    elif isinstance(exception, lightbulb.CommandInvocationError):
-        await event.context.respond(
-            f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
-        )
-    else:
-        raise exception
-
-
-"""
 Give command: !give @user @gift_amount
 """
 
@@ -187,22 +166,6 @@ async def give(ctx: lightbulb.Context) -> None:
             f"{target.mention}, {user.mention} has given you {formatBalance(gift_amount)} points."
         )
         store.write_csv(users)
-
-
-"""
-Error handling function for give command
-"""
-
-
-@give.set_error_handler
-async def give_error(event: lightbulb.CommandErrorEvent) -> bool:
-    exception = event.exception.__cause__ or event.exception
-    if isinstance(exception, lightbulb.CommandInvocationError):
-        await event.context.respond(
-            f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
-        )
-    else:
-        raise exception
 
 
 """
@@ -298,21 +261,6 @@ async def donate(ctx: lightbulb.Context) -> None:
         f"{target.mention}, {formatBalance(donation_amount)} point(s) have been added to your balance."
     )
     store.write_csv(users)
-
-
-@donate.set_error_handler
-async def donate_error(event: lightbulb.CommandErrorEvent) -> bool:
-    exception = event.exception.__cause__ or event.exception
-    if isinstance(exception, lightbulb.MissingRequiredPermission):
-        await event.context.respond(
-            f"{event.context.author.mention}, you do not have the required permissions to run {event.context.command.name} command."
-        )
-    elif isinstance(exception, lightbulb.CommandInvocationError):
-        await event.context.respond(
-            f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
-        )
-    else:
-        raise exception
 
 
 """

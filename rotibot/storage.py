@@ -1,6 +1,7 @@
 import csv
 import typing as t
 
+
 # Reads users.csv and returns a Dictionary
 def read_csv() -> t.Dict[int, t.Dict]:
     users = dict()

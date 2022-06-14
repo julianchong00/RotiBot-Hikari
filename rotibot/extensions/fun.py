@@ -1,6 +1,7 @@
+import asyncio
+
 import hikari
 import lightbulb
-import asyncio
 
 ANIMALS = {
     "Dog": "🐶",
