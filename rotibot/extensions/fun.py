@@ -161,7 +161,7 @@ class TicTacToeButtons(tungsten.Components):
         elif (
             int(button_rows[0][1].state)
             == int(button_rows[1][1].state)
-            == int(button_rows[1][1].state)
+            == int(button_rows[2][1].state)
             != 0
         ):
             return True
@@ -238,14 +238,18 @@ class TicTacToeButtons(tungsten.Components):
         self.button_group.edit_button(x, y, state=state_cycle[button.state])
 
         winnerPresent = self.check_winner()
-        print(winnerPresent)
+        self.turn += 1
+
         if winnerPresent:
             self.disable_components()
             await self.edit_msg(
                 f"{interaction.user.mention} has won the game!", components=self.build()
             )
+        elif not winnerPresent and self.turn == 9:
+            self.disable_components()
+            await self.edit_msg(f"It's a Tie!", components=self.build())
         elif not winnerPresent and self.turn != 9:
-            self.turn += 1
+
             if currentPlayer.id == self.player1.id:
                 await self.edit_msg(
                     f"{self.player2.mention}, it is your turn!", components=self.build()
@@ -254,9 +258,6 @@ class TicTacToeButtons(tungsten.Components):
                 await self.edit_msg(
                     f"{self.player1.mention}, it is your turn!", components=self.build()
                 )
-        elif not winnerPresent and self.turn == 9:
-            self.disable_components()
-            await self.edit_msg(f"It's a Tie!", components=self.build())
 
 
 @fun_group.child
