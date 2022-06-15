@@ -1,7 +1,9 @@
 import asyncio
+import typing as t
 
 import hikari
 import lightbulb
+from lightbulb.ext.tungsten import tungsten
 
 ANIMALS = {
     "Dog": "🐶",
@@ -23,6 +25,11 @@ fun_plugin = lightbulb.Plugin("Fun")
 @lightbulb.implements(lightbulb.SlashCommandGroup, lightbulb.PrefixCommandGroup)
 async def fun_group(ctx: lightbulb.Context) -> None:
     pass
+
+
+"""
+Meme command
+"""
 
 
 @fun_group.child
@@ -48,6 +55,11 @@ async def meme_subcommand(ctx: lightbulb.Context) -> None:
             await ctx.respond(
                 "Could not fetch a meme :c", flags=hikari.MessageFlag.EPHEMERAL
             )
+
+
+"""
+Animal picture + fact command
+"""
 
 
 @fun_group.child
@@ -101,25 +113,176 @@ async def animal_subcommand(ctx: lightbulb.Context) -> None:
                 await msg.edit(f"API returned a {res.status} status", components=[])
 
 
-# WIP
+"""
+Tic-Tac-Toe command
+"""
+
+
+class TicTacToeButtons(tungsten.Components):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.button_group = self.create_button_group()
+        self.turn = 0
+
+    def set_players(self, player1: hikari.Member, player2: hikari.Member):
+        self.player1 = player1
+        self.player2 = player2
+
+    def check_winner(self):
+        button_rows = self.button_group.button_rows
+        if (
+            int(button_rows[0][0].state)
+            == int(button_rows[0][1].state)
+            == int(button_rows[0][2].state)
+            != 0
+        ):
+            return True
+        elif (
+            int(button_rows[1][0].state)
+            == int(button_rows[1][1].state)
+            == int(button_rows[1][2].state)
+            != 0
+        ):
+            return True
+        elif (
+            int(button_rows[2][0].state)
+            == int(button_rows[2][1].state)
+            == int(button_rows[2][2].state)
+            != 0
+        ):
+            return True
+        elif (
+            int(button_rows[0][0].state)
+            == int(button_rows[1][0].state)
+            == int(button_rows[2][0].state)
+            != 0
+        ):
+            return True
+        elif (
+            int(button_rows[0][1].state)
+            == int(button_rows[1][1].state)
+            == int(button_rows[1][1].state)
+            != 0
+        ):
+            return True
+        elif (
+            int(button_rows[0][2].state)
+            == int(button_rows[1][2].state)
+            == int(button_rows[2][2].state)
+            != 0
+        ):
+            return True
+        elif (
+            int(button_rows[0][0].state)
+            == int(button_rows[1][1].state)
+            == int(button_rows[2][2].state)
+            != 0
+        ):
+            return True
+        elif (
+            int(button_rows[0][2].state)
+            == int(button_rows[1][1].state)
+            == int(button_rows[2][0].state)
+            != 0
+        ):
+            return True
+        else:
+            return False
+
+    def create_button_group(self):
+        button_states = {
+            0: tungsten.ButtonState(
+                label="", style=hikari.ButtonStyle.SECONDARY, emoji="➖"
+            ),
+            1: tungsten.ButtonState(
+                label="", style=hikari.ButtonStyle.PRIMARY, emoji="❌"
+            ),
+            2: tungsten.ButtonState(
+                label="", style=hikari.ButtonStyle.SUCCESS, emoji="⭕"
+            ),
+        }
+        button_rows = [
+            [
+                tungsten.Button(state=0, button_states=button_states),
+                tungsten.Button(state=0, button_states=button_states),
+                tungsten.Button(state=0, button_states=button_states),
+            ],
+            [
+                tungsten.Button(state=0, button_states=button_states),
+                tungsten.Button(state=0, button_states=button_states),
+                tungsten.Button(state=0, button_states=button_states),
+            ],
+            [
+                tungsten.Button(state=0, button_states=button_states),
+                tungsten.Button(state=0, button_states=button_states),
+                tungsten.Button(state=0, button_states=button_states),
+            ],
+        ]
+        return tungsten.ButtonGroup(button_rows)
+
+    async def button_callback(
+        self,
+        button: tungsten.Button,
+        x: int,
+        y: int,
+        interaction: hikari.ComponentInteraction,
+    ) -> None:
+
+        if interaction.user.id == self.player1.id:
+            currentPlayer = self.player1
+            state_cycle = {0: 1, 1: 1, 2: 2}
+        else:
+            currentPlayer = self.player2
+            state_cycle = {0: 2, 1: 1, 2: 2}
+
+        self.button_group.edit_button(x, y, state=state_cycle[button.state])
+
+        winnerPresent = self.check_winner()
+        print(winnerPresent)
+        if winnerPresent:
+            self.disable_components()
+            await self.edit_msg(
+                f"{interaction.user.mention} has won the game!", components=self.build()
+            )
+        elif not winnerPresent and self.turn != 9:
+            self.turn += 1
+            if currentPlayer.id == self.player1.id:
+                await self.edit_msg(
+                    f"{self.player2.mention}, it is your turn!", components=self.build()
+                )
+            else:
+                await self.edit_msg(
+                    f"{self.player1.mention}, it is your turn!", components=self.build()
+                )
+        elif not winnerPresent and self.turn == 9:
+            self.disable_components()
+            await self.edit_msg(f"It's a Tie!", components=self.build())
+
+
 @fun_group.child
+@lightbulb.option("player1", "Player 1", hikari.Member, required=True)
+@lightbulb.option("player2", "Player 2", hikari.Member, required=True)
 @lightbulb.command("ttt", "Play a game of tic tac toe")
 @lightbulb.implements(lightbulb.SlashSubCommand, lightbulb.PrefixSubCommand)
 async def tictactoe_subcommand(ctx: lightbulb.Context) -> None:
-    button = hikari.ButtonComponent(
-        type=2,
-        style=hikari.ButtonStyle.SECONDARY,
-        custom_id="button",
-        label=None,
-        emoji=None,
-        url=None,
-        is_disabled=False,
-    )
+    player1 = ctx.get_guild().get_member(ctx.options.player1)
+    player2 = ctx.get_guild().get_member(ctx.options.player2)
 
-    row = ctx.bot.rest.build_action_row().add_button(
-        hikari.ButtonStyle.SECONDARY, button.custom_id
+    if not player1:
+        await ctx.respond("Player 1 is not in the server.")
+        return
+    if not player2:
+        await ctx.respond("Player 2 is not in the server.")
+        return
+    if player1.id == player2.id:
+        await ctx.respond(f"{ctx.user.mention}, player 1 cannot be equal to player 2.")
+
+    buttons = TicTacToeButtons(ctx)
+    buttons.set_players(player1, player2)
+    resp = await ctx.respond(
+        f"{player1.mention}, it is your turn!", components=buttons.build()
     )
-    await ctx.respond("test", components=[row])
+    await buttons.run(resp)
 
 
 def load(bot: lightbulb.BotApp) -> None:
