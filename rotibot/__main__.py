@@ -1,3 +1,4 @@
+from code import interact
 import os
 from pathlib import Path
 
@@ -40,34 +41,42 @@ async def on_stopping(event: hikari.StoppingEvent) -> None:
 async def on_error(event: lightbulb.CommandErrorEvent) -> None:
     exception = event.exception.__cause__ or event.exception
     if isinstance(exception, lightbulb.CommandIsOnCooldown):
-        isSubCommand = False
+        commandName = await get_command_name(event.context.interaction)
 
-        interaction_options = event.context.interaction.options
-
-        if len(interaction_options) > 0:
-            for option in interaction_options:
-                if option.type == hikari.OptionType.SUB_COMMAND:
-                    isSubCommand = True
-
-        if isSubCommand:
-            subCommandName = event.context.interaction.options[0].name
-            await event.context.respond(
-                f"{event.context.author.mention}, {subCommandName} command is on cooldown for {exception.retry_after:,.0f} seconds."
-            )
-        else:
-            await event.context.respond(
-                f"{event.context.author.mention}, {event.context.command.name} command is on cooldown for {exception.retry_after:,.0f} seconds."
-            )
-    elif isinstance(exception, lightbulb.MissingRequiredPermission):
         await event.context.respond(
-            f"{event.context.author.mention}, you do not have the required permissions to run {event.context.command.name} command."
+            f"{event.context.author.mention}, {commandName} command is on cooldown for {exception.retry_after:,.0f} seconds."
+        )
+    elif isinstance(exception, lightbulb.MissingRequiredPermission):
+        commandName = await get_command_name(event.context.interaction)
+
+        await event.context.respond(
+            f"{event.context.author.mention}, you do not have the required permissions to run {commandName} command."
         )
     elif isinstance(exception, lightbulb.CommandInvocationError):
+        commandName = await get_command_name(event.context.interaction)
+
         await event.context.respond(
-            f"{event.context.author.mention}, something went wrong during invocation of command {event.context.command.name}."
+            f"{event.context.author.mention}, something went wrong during invocation of command {commandName}."
         )
     else:
         raise exception
+
+
+# Function to check for subcommand in interaction
+async def get_command_name(interaction: hikari.CommandInteraction) -> str:
+    isSubCommand = False
+    interaction_options = interaction.options
+
+    if len(interaction_options) > 0:
+        for option in interaction_options:
+            if option.type == hikari.OptionType.SUB_COMMAND:
+                isSubCommand = True
+                break
+
+    if isSubCommand:
+        return interaction_options[0].name
+    else:
+        return interaction.command_name
 
 
 tasks.load(bot)
