@@ -6,3 +6,4 @@ aiohttp>=3.8.1
 SQLAlchemy>=1.4.37
 psycopg2>=2.9.3
 lightbulb-ext-tungsten>=0.1
+lavasnek-rs>=0.1.0a5
