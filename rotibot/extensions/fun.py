@@ -1,5 +1,5 @@
 import asyncio
-import typing as t
+import random
 
 import hikari
 import lightbulb
@@ -284,6 +284,29 @@ async def tictactoe_subcommand(ctx: lightbulb.Context) -> None:
         f"{player1.mention}, it is your turn!", components=buttons.build()
     )
     await buttons.run(resp)
+
+
+"""
+Coinflip command
+"""
+
+
+@fun_group.child
+@lightbulb.option("option1", "Option 1", str, required=True)
+@lightbulb.option("option2", "Option 2", str, required=True)
+@lightbulb.command("coinflip", "Flip a coin")
+@lightbulb.implements(lightbulb.SlashSubCommand, lightbulb.PrefixSubCommand)
+async def coinflip_subcommand(ctx: lightbulb.Context) -> None:
+    option1 = ctx.options.option1
+    option2 = ctx.options.option2
+
+    random.seed()
+    choice = random.choice([0, 1])
+
+    if choice == 0:
+        await ctx.respond(f"**{option1}** has won the coin flip!")
+    else:
+        await ctx.respond(f"**{option2}** has won the coin flip!")
 
 
 def load(bot: lightbulb.BotApp) -> None:
